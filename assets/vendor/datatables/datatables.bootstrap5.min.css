@@ -1,0 +1,7 @@
+/* Local wrapper for DataTables Bootstrap5 CSS. This file proxies to CDN to keep repo small.
+   You can replace the @import with a local copy of the CSS later if you prefer. */
+@import url('https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css');
+@import url('https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css');
+/* small custom overrides */
+table.dataTable thead th { background:#f1f3f5; }
+.dataTables_wrapper .dataTables_filter input { width: 220px; }

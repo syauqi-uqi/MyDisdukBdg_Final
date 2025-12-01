@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detail Kecamatan</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/vendor/datatables/datatables.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    body { padding: 18px; background:#f8f9fa; }
+    .top-card { margin-bottom:12px; }
+    #map-detail { height: 260px; border-radius:6px; }
+    .dataset-section { margin-bottom: 12px !important; padding:12px !important; background:#fff; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+    /* Global compact table spacing for all dataset tables */
+    .dataset-section table th,
+    .dataset-section table td {
+      padding: 6px 8px;
+      line-height: 1.2;
+      vertical-align: middle;
+    }
+    .chart-grid { display:flex; flex-wrap:wrap; gap:12px; }
+    .chart-item { flex:1 1 calc(50% - 12px); background:#fff; padding:12px; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+    @media (max-width: 992px) { .chart-item { flex:1 1 100%; } }
+    .small-muted { color:#6c757d; }
+    .brand-logo-small { height:28px; object-fit:contain; margin-right:8px; }
+    /* Grafik two-column layout: charts left, aggregate card right */
+    #grafik .grafik-body { display:flex; gap:12px; align-items:flex-start; }
+    #grafik #charts { flex: 1 1 0; }
+    #aggregate-card { width: 260px; background:#fff; padding:12px; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+    #aggregate-card .value { font-size:1.25rem; font-weight:600; }
+    /* Removed dataset-pekerjaan special-case so all dataset tables share the same spacing */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="row top-card">
+      <div class="col-lg-7">
+        <div class="card p-2">
+          <div id="map-detail"></div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <h4 id="page-title" class="mb-0">Kecamatan</h4>
+              <!-- Luas Wilayah removed from UI per request -->
+            </div>
+            <div style="min-width:180px;">
+              <input id="filter-box" class="form-control form-control-sm" placeholder="Filter tabel / charts..." />
+            </div>
+          </div>
+          <p id="summary" class="small-muted mb-0">Memuat data...</p>
+        </div>
+      </div>
+    </div>
+
+    <ul class="nav nav-tabs" id="detailTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-data-umum" data-bs-toggle="tab" data-bs-target="#data-umum" type="button" role="tab">Data Umum</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-grafik" data-bs-toggle="tab" data-bs-target="#grafik" type="button" role="tab">Grafik</button>
+      </li>
+    </ul>
+    <div class="tab-content mt-2">
+      <div class="tab-pane fade show active" id="data-umum" role="tabpanel">
+        <div id="datasets"></div>
+      </div>
+      <div class="tab-pane fade" id="grafik" role="tabpanel">
+        <div class="grafik-body p-2">
+          <div id="charts" class="chart-grid"></div>
+          <div id="aggregate-card" aria-live="polite">
+            <div class="small text-muted">Luas Wilayah Kecamatan</div>
+            <div id="luas-value" class="value">Memuat...</div>
+              <div class="small-muted mt-1" id="luas-source">Dinas Kependudukan Dan Pencatatan Sipil</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/datatables/datatables.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+  <script src="https://code.highcharts.com/modules/offline-exporting.js"></script>
+  <script src="https://code.highcharts.com/modules/full-screen.js"></script>
+  <!-- SheetJS for XLSX export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    // Lightweight, lazy-loading detail page
+    var DATASETS = [
+      { file: 'data/Agama_L_2025.geojson', title: 'Agama (Laki-laki)', chartType: 'pie' },
+      { file: 'data/Agama_P_2025.geojson', title: 'Agama (Perempuan)', chartType: 'pie' },
+      { file: 'data/Goldar_L_2025.geojson', title: 'Golongan Darah (Laki-laki)', chartType: 'pie' },
+      { file: 'data/Goldar_P_2025.geojson', title: 'Golongan Darah (Perempuan)', chartType: 'pie' },
+      { file: 'data/JenisKelamin_2025.geojson', title: 'Jenis Kelamin', chartType: 'dynamic' },
+      { file: 'data/KepalaKeluarga_2025.geojson', title: 'Kepala Keluarga', chartType: 'dynamic' },
+      { file: 'data/Pekerjaan_L_2025.geojson', title: 'Pekerjaan (Laki-laki)', chartType: 'pie' },
+      { file: 'data/Pekerjaan_P_2025.geojson', title: 'Pekerjaan (Perempuan)', chartType: 'pie' },
+      { file: 'data/Pendidikan_L_2025.geojson', title: 'Pendidikan (Laki-laki)', chartType: 'pie' },
+      { file: 'data/Pendidikan_P_2025.geojson', title: 'Pendidikan (Perempuan)', chartType: 'pie' }
+    ];
+
+    var wadName = null;
+    var datasetsCache = {}; // key: file -> { features, json }
+    var tablesLoaded = false;
+    var chartsLoaded = false;
+
+    function q(s){ return document.querySelector(s); }
+    function createEl(html){ var d=document.createElement('div'); d.innerHTML=html; return d.firstChild; }
+
+    function getQueryParam(name){ var params = new URLSearchParams(window.location.search); return params.get(name); }
+
+    function normalizeKey(props){ if(!props) return ''; return (props.WADMKC || props.NAMOBJ || props.WADMKD || props.Kantor_Kec || '').toString(); }
+
+    // show minimal table html (accessible, formatted)
+    function escapeHtml(str){ if (str === null || str === undefined) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function normalizeDisplayText(text){
+      if (text === null || text === undefined) return text;
+      try{
+        var s = String(text).trim();
+        // replace local abbreviation 'Prp' -> 'Perempuan'
+        if (s.toLowerCase() === 'prp') return 'Perempuan';
+        return s;
+      }catch(e){ return text; }
+    }
+
+    function formatValue(v){
+      if (v === null || v === undefined) return '';
+      if (Array.isArray(v)) return escapeHtml(v.join(', '));
+      // apply simple normalization for some string codes
+      if (typeof v === 'string'){
+        var n = normalizeDisplayText(v);
+        return escapeHtml(n);
+      }
+      // format numbers with locale-aware formatting (id-ID)
+      if (!isNaN(Number(v)) && String(v).trim() !== ''){
+        try{ return (new Intl.NumberFormat('id-ID').format(Number(v))); }catch(e){ return escapeHtml(String(v)); }
+      }
+      return escapeHtml(String(v));
+    }
+    function orderColumns(cols){
+      var preferred = ['WADMKC','NAMOBJ','WADMKD','Kantor_Kec','KDPUM','JML_PEND','POP_TOTAL','POP_MALE','POP_FEMALE'];
+      var seen = {};
+      var out = [];
+      preferred.forEach(function(k){ cols.forEach(function(c){ if (!seen[c] && c === k) { out.push(c); seen[c]=true; } }); });
+      // then add remaining columns alphabetically
+      cols.slice().sort().forEach(function(c){ if (!seen[c]) { out.push(c); seen[c]=true; } });
+      return out;
+    }
+    function createTableHtml(id, columns, rows){
+      var html = '<div class="dataset-section" role="region" aria-label="Dataset '+ escapeHtml(id.title) +'">';
+      html += '<div class="d-flex justify-content-between align-items-center mb-2"><div><strong>' + escapeHtml(id.title) + '</strong></div><div class="small text-muted">' + rows.length + ' record(s)</div></div>';
+      if(rows.length===0){ html += '<div class="no-data">Tidak ada data untuk wilayah ini.</div></div>'; return html; }
+      var cols = orderColumns(columns);
+      html += '<div class="table-responsive"><table class="table table-sm table-striped table-hover" id="' + id.domId + '" aria-describedby="summary"><caption class="visually-hidden">Tabel ' + escapeHtml(id.title) + '</caption><thead class="table-light"><tr>';
+      cols.forEach(function(col){ html += '<th scope="col">' + escapeHtml(col) + '</th>'; });
+      html += '</tr></thead><tbody>';
+      rows.forEach(function(r){ html += '<tr>'; cols.forEach(function(c){ var v = r[c]; html += '<td>' + formatValue(v) + '</td>'; }); html += '</tr>'; });
+      html += '</tbody></table></div>';
+      html += '<div class="small-muted mt-1 source">Dinas Kependudukan Dan Pencatatan Sipil</div>';
+      html += '</div>';
+      return html;
+    }
+
+    // Create specialized table for Agama datasets with two-row header
+    function getPropCaseInsensitive(props, candidates){ if(!props) return null; for(var i=0;i<candidates.length;i++){ var k=candidates[i]; if(props[k]!==undefined && props[k]!==null) return props[k]; var lower = k.toLowerCase(); for(var kk in props){ if(kk.toLowerCase()===lower) return props[kk]; } } return null; }
+    function createAgamaTableHtml(id, rows){
+      var html = '<div class="dataset-section" role="region" aria-label="Dataset '+ escapeHtml(id.title) +'">';
+      html += '<div class="d-flex justify-content-between align-items-center mb-2"><div><strong>' + escapeHtml(id.title) + '</strong></div><div class="small text-muted">' + rows.length + ' record(s)</div></div>';
+      if (rows.length===0) { html += '<div class="no-data">Tidak ada data untuk wilayah ini.</div></div>'; return html; }
+      // compute totals for agama columns
+      var subs = ['Islam','Kristen','Hindu','Budha','Khonghucu','Kepercayaan','Katolik'];
+      var totals = { Islam:0, Kristen:0, Hindu:0, Budha:0, Khonghucu:0, Kepercayaan:0, Katolik:0 };
+      rows.forEach(function(props){
+        try{
+          subs.forEach(function(s){
+            var v = getPropCaseInsensitive(props, [s, s.toLowerCase(), s.charAt(0).toUpperCase()+s.slice(1)]);
+            var n = Number(v);
+            if (isNaN(n)) n = 0;
+            totals[s] += n;
+          });
+        }catch(e){}
+      });
+
+      // toolbar: export Excel (.xlsx)
+      html += '<div class="d-flex justify-content-end mb-2"><button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="exportAgamaTableXlsx(\''+ id.domId + '\')">Ekspor Excel (.xlsx)</button></div>';
+
+      html += '<div class="table-responsive"><table class="table table-sm table-striped table-hover enhanced-table" id="' + id.domId + '" aria-describedby="summary">';
+      html += '<caption class="visually-hidden">Tabel ' + escapeHtml(id.title) + '</caption>';
+      // Header row 1
+      html += '<thead class="table-light">';
+      html += '<tr>';
+      html += '<th scope="col" rowspan="2">Nama Kecamatan</th>';
+      html += '<th scope="col" colspan="7">Jumlah Penduduk Berdasarkan Agama</th>';
+      html += '<th scope="col" rowspan="2">Keterangan</th>';
+      html += '</tr>';
+      // Header row 2 (sub-headers)
+      html += '<tr>';
+      var subs = ['Islam','Kristen','Hindu','Budha','Khonghucu','Kepercayaan','Katolik'];
+      subs.forEach(function(s){ html += '<th scope="col">' + escapeHtml(s) + '</th>'; });
+      html += '</tr></thead>';
+      // Body
+      html += '<tbody>';
+      rows.forEach(function(props){
+        var name = getPropCaseInsensitive(props, ['WADMKC','NAMOBJ','WADMKD','Kantor_Kec']) || '';
+        var islam = getPropCaseInsensitive(props, ['Islam']);
+        var kristen = getPropCaseInsensitive(props, ['Kristen']);
+        var hindu = getPropCaseInsensitive(props, ['Hindu']);
+        var budha = getPropCaseInsensitive(props, ['Budha','Buddha']);
+        var khong = getPropCaseInsensitive(props, ['Khonghucu','Khonghucu']);
+        var kepercayaan = getPropCaseInsensitive(props, ['Kpercayaan','Kepercayaan','Kepercayaan']);
+        var katolik = getPropCaseInsensitive(props, ['Katholik','Katolik']);
+        var keterangan = getPropCaseInsensitive(props, ['KDCPUM','KDPUM','KDPUM']);
+        html += '<tr>';
+        html += '<td>' + escapeHtml(name) + '</td>';
+        html += '<td>' + formatValue(islam) + '</td>';
+        html += '<td>' + formatValue(kristen) + '</td>';
+        html += '<td>' + formatValue(hindu) + '</td>';
+        html += '<td>' + formatValue(budha) + '</td>';
+        html += '<td>' + formatValue(khong) + '</td>';
+        html += '<td>' + formatValue(kepercayaan) + '</td>';
+        html += '<td>' + formatValue(katolik) + '</td>';
+        html += '<td>' + escapeHtml(keterangan || '') + '</td>';
+        html += '</tr>';
+      });
+      html += '</tbody>';
+      // footer with totals
+      html += '<tfoot><tr class="total-row">';
+      html += '<th>Total</th>';
+      subs.forEach(function(s){ html += '<th>' + formatValue(totals[s]) + '</th>'; });
+      html += '<th></th>';
+      html += '</tr></tfoot>';
+      html += '</table></div>';
+      html += '<div class="small-muted mt-1 source">Dinas Kependudukan Dan Pencatatan Sipil</div>';
+      html += '</div>';
+      return html;
+    }
+
+    // Export Agama table to Excel (.xlsx) using SheetJS
+    function exportAgamaTableXlsx(domId){
+      try{
+        var table = document.getElementById(domId);
+        if (!table || !window.XLSX) return;
+        var wb = XLSX.utils.book_new();
+        var ws = XLSX.utils.table_to_sheet(table, { raw: true });
+        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+        var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        var blob = new Blob([wbout], { type: 'application/octet-stream' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = domId + '.xlsx'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      }catch(e){ console.warn('Export XLSX failed', e); }
+    }
+
+    // General category table renderer mapping (file path -> subcolumns)
+    var CATEGORY_TABLES = {
+      'data/Agama_L_2025.geojson': { subs: ['Islam','Kristen','Hindu','Budha','Khonghucu','Kepercayaan','Katolik'], keterangan: ['KDCPUM','KDPUM'] },
+      'data/Agama_P_2025.geojson': { subs: ['Islam','Kristen','Hindu','Budha','Khonghucu','Kepercayaan','Katolik'], keterangan: ['KDCPUM','KDPUM'] },
+      // Goldar properties are stored with prefixes like GolA, GolB, GolAB, GolO
+      'data/Goldar_L_2025.geojson': { subs: [ { label:'A', keys:['GolA','GOLA','gola','A'] }, { label:'B', keys:['GolB','GOLB','golb','B'] }, { label:'AB', keys:['GolAB','GOLAB','golab','AB'] }, { label:'O', keys:['GolO','GOLO','golo','O'] } ], keterangan: ['KDCPUM','KDPUM'] },
+      'data/Goldar_P_2025.geojson': { subs: [ { label:'A', keys:['GolA','GOLA','gola','A'] }, { label:'B', keys:['GolB','GOLB','golb','B'] }, { label:'AB', keys:['GolAB','GOLAB','golab','AB'] }, { label:'O', keys:['GolO','GOLO','golo','O'] } ], keterangan: ['KDCPUM','KDPUM'] },
+      'data/JenisKelamin_2025.geojson': { subs: ['Laki-laki','Perempuan'], keterangan: ['KDCPUM','KDPUM'] },
+      'data/KepalaKeluarga_2025.geojson': { subs: [ { label: 'Laki-laki', keys: ['lakilaki','Laki-laki','Laki','laki'] }, { label: 'Perempuan', keys: ['perempuan','Perempuan','Prp','prp'] }, { label: 'Jumlah', keys: ['jumlah','Jumlah','JML','total'] } ], keterangan: ['KDCPUM','KDPUM'] },
+      'data/Pekerjaan_L_2025.geojson': {
+        subs: [
+          { label: 'Belum/Tidak Bekerja', keys: ['Belum_Tida','Belum_Tidak','Belum','Belum_Tida'] },
+          { label: 'Mengurus Rumah Tangga', keys: ['Mengurus_R','Mengurus','Mengurus_R'] },
+          { label: 'Pelajar / Mahasiswa', keys: ['Pelajar_Ma','Pelajar','Pelajar_Ma'] },
+          { label: 'Pensiunan', keys: ['Pensiunan','pensiunan'] },
+          { label: 'PNS', keys: ['PNS'] },
+          { label: 'TNI', keys: ['TNI'] },
+          { label: 'POLRI', keys: ['POLRI'] },
+          { label: 'Perdagangan', keys: ['Perdaganga','Perdagangan','Perdaganga'] },
+          { label: 'Petani / Pekebun', keys: ['Petani_Pek','Petani','Petani_Pek'] },
+          { label: 'Peternak', keys: ['Peternak'] },
+          { label: 'Nelayan', keys: ['Nelayan_Pe','Nelayan'] },
+          { label: 'Industri', keys: ['Industri'] },
+          { label: 'Konstruksi', keys: ['Konstruksi'] },
+          { label: 'Transportasi', keys: ['transporta','Transporta','Transportasi'] },
+          { label: 'Karyawan Swasta', keys: ['Krywn_Swas','Krywn_Swas'] },
+          { label: 'Karyawan BUMN', keys: ['Krywn_BUMN'] },
+          { label: 'Karyawan BUMD', keys: ['Krywn_BUMD'] },
+          { label: 'Karyawan Honorer', keys: ['Krywn_Hono'] },
+          { label: 'Buruh Harian', keys: ['Buruh_Hari'] },
+          { label: 'Buruh Tani', keys: ['Buruh_Tani'] },
+          { label: 'Buruh Nelayan', keys: ['Buruh_Nela'] },
+          { label: 'Buruh Peternak', keys: ['Buruh_Pete'] },
+          { label: 'Pembantu Rumah Tangga', keys: ['Pembantu_R'] },
+          { label: 'Tukang / Jasa (various)', keys: ['Tukang_Cuk','Tukang_Lis','Tukang_Bat','Tukang_Kay','Tukang_Sol','Tukang_Las','Tukang_Jah','Tukang_Gig'] },
+          { label: 'Penata Rias / Busana', keys: ['Penata_Ria','Penata_Bus','Penata_Ram'] },
+          { label: 'Mekanik', keys: ['Mekanik'] },
+          { label: 'Seniman', keys: ['Seniman'] },
+          { label: 'Tabib / Paraji / Traditional Healer', keys: ['Tabib','Paraji'] },
+          { label: 'Perancang / Desainer', keys: ['Perancang'] },
+          { label: 'Penterjemah', keys: ['Penterjema','Penterjemah'] },
+          { label: 'Tenaga Agama / Tokoh', keys: ['Imam_Masji','Pendeta','Pastor','Ustadz_Mub'] },
+          { label: 'Media & Jurnalis', keys: ['Wartawan','Penyiar_Te','Penyiar_Ra'] },
+          { label: 'Dosen', keys: ['Dosen'] },
+          { label: 'Guru', keys: ['Guru'] },
+          { label: 'Pengacara / Notaris / Konsultan', keys: ['Pengacara','Notaris','Konsultan'] },
+          { label: 'Arsitek / Akuntan', keys: ['Arsitek','Akuntan'] },
+          { label: 'Dokter / Tenaga Kesehatan', keys: ['Dokter','Bidan','Perawat','Apoteker','Psikiater'] },
+          { label: 'Peneliti / Akademik', keys: ['Peneliti'] },
+          { label: 'Sopir / Transport', keys: ['Sopir'] },
+          { label: 'Pedagang', keys: ['Pedagang'] },
+          { label: 'Wiraswasta / Usaha', keys: ['Wiraswasta'] },
+          { label: 'Pekerja Lainnya / Misc', keys: ['Pekerja_Pe','Pekerjaan','Perangkat','Anggota_Le','Anggota__3'] }
+        ],
+        keterangan: ['KDCPUM','KDPUM']
+      },
+      'data/Pekerjaan_P_2025.geojson': {
+        subs: [
+          { label: 'Belum/Tidak Bekerja', keys: ['Belum_Tida','Belum_Tidak','Belum'] },
+          { label: 'Mengurus Rumah Tangga', keys: ['Mengurus_R','Mengurus'] },
+          { label: 'Pelajar / Mahasiswa', keys: ['Pelajar_Ma','Pelajar'] },
+          { label: 'Pensiunan', keys: ['Pensiunan'] },
+          { label: 'PNS', keys: ['PNS'] },
+          { label: 'TNI', keys: ['TNI'] },
+          { label: 'POLRI', keys: ['POLRI'] },
+          { label: 'Perdagangan', keys: ['Perdaganga','Perdagangan'] },
+          { label: 'Petani / Pekebun', keys: ['Petani_Pek','Petani'] },
+          { label: 'Peternak', keys: ['Peternak'] },
+          { label: 'Nelayan', keys: ['Nelayan_Pe','Nelayan'] },
+          { label: 'Industri', keys: ['Industri'] },
+          { label: 'Konstruksi', keys: ['Konstruksi'] },
+          { label: 'Transportasi', keys: ['transporta','Transporta','Transportasi'] },
+          { label: 'Karyawan Swasta', keys: ['Krywn_Swas'] },
+          { label: 'Karyawan BUMN', keys: ['Krywn_BUMN'] },
+          { label: 'Karyawan BUMD', keys: ['Krywn_BUMD'] },
+          { label: 'Karyawan Honorer', keys: ['Krywn_Hono'] },
+          { label: 'Buruh Harian', keys: ['Buruh_Hari'] },
+          { label: 'Buruh Tani', keys: ['Buruh_Tani'] },
+          { label: 'Buruh Nelayan', keys: ['Buruh_Nela'] },
+          { label: 'Buruh Peternak', keys: ['Buruh_Pete'] },
+          { label: 'Pembantu Rumah Tangga', keys: ['Pembantu_R'] },
+          { label: 'Tukang / Jasa (various)', keys: ['Tukang_Cuk','Tukang_Lis','Tukang_Bat','Tukang_Kay','Tukang_Sol','Tukang_Las','Tukang_Jah','Tukang_Gig'] },
+          { label: 'Penata Rias / Busana', keys: ['Penata_Ria','Penata_Bus','Penata_Ram'] },
+          { label: 'Mekanik', keys: ['Mekanik'] },
+          { label: 'Seniman', keys: ['Seniman'] },
+          { label: 'Tabib / Paraji / Traditional Healer', keys: ['Tabib','Paraji'] },
+          { label: 'Perancang / Desainer', keys: ['Perancang'] },
+          { label: 'Penterjemah', keys: ['Penterjema','Penterjemah'] },
+          { label: 'Tenaga Agama / Tokoh', keys: ['Imam_Masji','Pendeta','Pastor','Ustadz_Mub'] },
+          { label: 'Media & Jurnalis', keys: ['Wartawan','Penyiar_Te','Penyiar_Ra'] },
+          { label: 'Dosen', keys: ['Dosen'] },
+          { label: 'Guru', keys: ['Guru'] },
+          { label: 'Pengacara / Notaris / Konsultan', keys: ['Pengacara','Notaris','Konsultan'] },
+          { label: 'Arsitek / Akuntan', keys: ['Arsitek','Akuntan'] },
+          { label: 'Dokter / Tenaga Kesehatan', keys: ['Dokter','Bidan','Perawat','Apoteker','Psikiater'] },
+          { label: 'Peneliti / Akademik', keys: ['Peneliti'] },
+          { label: 'Sopir / Transport', keys: ['Sopir'] },
+          { label: 'Pedagang', keys: ['Pedagang'] },
+          { label: 'Wiraswasta / Usaha', keys: ['Wiraswasta'] },
+          { label: 'Pekerja Lainnya / Misc', keys: ['Pekerja_Pe','Pekerjaan','Perangkat','Anggota_Le','Anggota__3'] }
+        ],
+        keterangan: ['KDCPUM','KDPUM']
+      },
+      'data/Pendidikan_L_2025.geojson': { subs: [], keterangan: ['KDCPUM','KDPUM'] },
+      'data/Pendidikan_P_2025.geojson': { subs: [], keterangan: ['KDCPUM','KDPUM'] }
+    };
+
+    // General-purpose category table builder (supports header with colspan for subcolumns)
+    function createCategoryTableHtml(id, subs, rows, options){
+      options = options || {};
+      var title = id.title || '';
+      var isPekerjaan = /pekerjaan/i.test(title || '');
+      var wrapperClass = isPekerjaan ? 'dataset-section dataset-pekerjaan' : 'dataset-section';
+      var html = '<div class="' + wrapperClass + '" role="region" aria-label="Dataset '+ escapeHtml(title) +'">';
+      html += '<div class="d-flex justify-content-between align-items-center mb-2"><div><strong>' + escapeHtml(title) + '</strong></div><div class="small text-muted">' + rows.length + ' record(s)</div></div>';
+      if (rows.length===0) { html += '<div class="no-data">Tidak ada data untuk wilayah ini.</div></div>'; return html; }
+      // compute totals
+      var totals = {};
+      subs.forEach(function(s){
+        var label = (typeof s === 'string')? s : (s.label || ''); totals[label]=0;
+      });
+        rows.forEach(function(props){ try{ subs.forEach(function(s){ var candidates = null; var label = null; if (typeof s === 'string'){ label = s; candidates = [s, s.replace(/\-/g,''), s.toLowerCase()]; } else { label = s.label || ''; candidates = s.keys || []; }
+          var v = getPropCaseInsensitive(props, candidates); var n = Number(v); if (isNaN(n)) n = 0; totals[label] += n; }); }catch(e){} });
+      // toolbar
+      html += '<div class="d-flex justify-content-end mb-2"><button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="exportCategoryTableXlsx(\''+ id.domId + '\')">Ekspor Excel (.xlsx)</button></div>';
+      html += '<div class="table-responsive"><table class="table table-sm table-striped table-hover table-bordered enhanced-table" id="' + id.domId + '" aria-describedby="summary">';
+      html += '<caption class="visually-hidden">Tabel ' + escapeHtml(title) + '</caption>';
+      // header
+      html += '<thead class="table-light">';
+      html += '<tr>';
+      html += '<th scope="col" rowspan="2">Nama Kecamatan</th>';
+      html += '<th scope="col" colspan="' + subs.length + '">Jumlah Penduduk Berdasarkan ' + escapeHtml(title) + '</th>';
+      html += '<th scope="col" rowspan="2">Keterangan</th>';
+      html += '</tr>';
+      html += '<tr>';
+      subs.forEach(function(s){ var label = (typeof s === 'string')? s : (s.label || ''); html += '<th scope="col">' + escapeHtml(label) + '</th>'; });
+      html += '</tr></thead>';
+      // body
+      html += '<tbody>';
+      rows.forEach(function(props){
+        var name = getPropCaseInsensitive(props, ['WADMKC','NAMOBJ','WADMKD','Kantor_Kec']) || '';
+        html += '<tr>';
+        html += '<td>' + escapeHtml(name) + '</td>';
+        subs.forEach(function(s){ var candidates = null; if (typeof s === 'string'){ candidates = [s, s.replace(/\-/g,''), s.toLowerCase()]; } else { candidates = s.keys || []; }
+          html += '<td>' + formatValue(getPropCaseInsensitive(props, candidates)) + '</td>'; });
+        var ket = getPropCaseInsensitive(props, options.keterangan || ['KDCPUM','KDPUM']) || '';
+        html += '<td>' + escapeHtml(ket) + '</td>';
+        html += '</tr>';
+      });
+      html += '</tbody>';
+      // footer totals
+      html += '<tfoot><tr class="total-row"><th>Total</th>';
+      subs.forEach(function(s){ var label = (typeof s === 'string')? s : (s.label || ''); html += '<th>' + formatValue(totals[label]) + '</th>'; });
+      html += '<th></th></tr></tfoot>';
+      html += '</table></div></div>';
+      return html;
+    }
+
+    // Export category table to Excel (.xlsx) using SheetJS
+    function exportCategoryTableXlsx(domId){
+      try{
+        var table = document.getElementById(domId);
+        if (!table || !window.XLSX) return;
+        // Use table_to_sheet which handles multi-row thead reasonably
+        var wb = XLSX.utils.book_new();
+        var ws = XLSX.utils.table_to_sheet(table, { raw: true });
+        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+        var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        var blob = new Blob([wbout], { type: 'application/octet-stream' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = domId + '.xlsx'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      }catch(e){ console.warn('Export XLSX failed', e); }
+    }
+
+    function initDataTableIfReady(domId){
+      var init = function(){
+        try{
+          if ($.fn.DataTable) {
+            $('#' + domId).DataTable({ paging:true, pageLength:10, lengthChange:true, searching:true, responsive:true, language:{ search:'Cari:' } });
+          } else if (window._datatables_loader && window._datatables_loader.ready) {
+            window._datatables_loader.ready(function(err){ if (!err) try{ $('#' + domId).DataTable({ paging:true, pageLength:10, lengthChange:true, searching:true, responsive:true }); }catch(e){} });
+          }
+        }catch(e){ console.warn('DataTable init failed', e); }
+      };
+      init();
+    }
+
+    // sequentially load datasets to avoid heavy parallel load
+    function loadDataTables(){
+      if (tablesLoaded) return Promise.resolve();
+      tablesLoaded = true;
+      var chain = Promise.resolve();
+      DATASETS.forEach(function(ds, idx){
+        chain = chain.then(function(){
+          return fetch(ds.file).then(function(resp){ if (!resp.ok) throw new Error('HTTP '+resp.status); return resp.json(); }).then(function(json){
+            var features = (json.features || []).filter(function(f){ return normalizeKey(f.properties) === wadName; });
+            datasetsCache[ds.file] = { features: features, json: json };
+            var colsSet = {};
+            features.forEach(function(f){ if (f && f.properties) Object.keys(f.properties).forEach(function(k){ colsSet[k]=true; }); });
+            var columns = Object.keys(colsSet);
+            if (columns.length===0 && features.length>0) columns = Object.keys(features[0].properties || {});
+            var domId = 'table-' + idx + '-' + ds.title.replace(/[^a-z0-9]/gi,'_');
+            ds.domId = domId;
+            var propsRows = features.map(function(f){ return f.properties || {}; });
+            var html = null;
+            var mapping = CATEGORY_TABLES[ds.file];
+            if (mapping) {
+              var subs = null;
+              if (mapping.subs && mapping.subs.length) {
+                subs = mapping.subs;
+              } else {
+                // auto-detect numeric properties across rows, exclude common metadata
+                var candidates = [];
+                var exclude = ['wadmkc','namobj','wadmkd','kdcpum','kdpum','jeniskel','jenis_kel','persentase','keterangan','keterangan_','jumlah'];
+                propsRows.forEach(function(p){ if (!p) return; Object.keys(p).forEach(function(k){ if (!k) return; var lk = k.toLowerCase(); if (exclude.indexOf(lk)!==-1) return; if (candidates.indexOf(k)!==-1) return; var v = p[k]; if (v!==null && v!==undefined && v!=='' && !isNaN(Number(v))) candidates.push(k); }); });
+                if (candidates.length===0) {
+                  // fallback: take first few non-metadata columns
+                  candidates = columns.filter(function(c){ var lk=c.toLowerCase(); return lk!=='wadmkc' && lk.indexOf('kd')===-1; }).slice(0,10);
+                }
+                subs = candidates.map(function(k){ return { label: k, keys: [k] }; });
+              }
+              html = createCategoryTableHtml({ title: ds.title, domId: domId }, subs, propsRows, { keterangan: mapping.keterangan });
+            } else {
+              html = createTableHtml({ title: ds.title, domId: domId }, columns, propsRows);
+            }
+            document.getElementById('datasets').insertAdjacentHTML('beforeend', html);
+            if (features.length>0) initDataTableIfReady(domId);
+          }).catch(function(err){
+            console.warn('Failed to load', ds.file, err);
+            document.getElementById('datasets').insertAdjacentHTML('beforeend','<div class="dataset-section"><strong>'+ds.title+'</strong><div class="no-data">Gagal memuat file.</div></div>');
+          });
+        });
+      });
+      return chain;
+    }
+
+    // Aggregates removed: UI and rendering for 'Agregat Penduduk' has been disabled per request.
+
+    // Charts: uses cached dataset entries if available, otherwise fetches minimal
+    function loadCharts(){
+      if (chartsLoaded) return Promise.resolve();
+      chartsLoaded = true;
+      var chain = Promise.resolve();
+      DATASETS.forEach(function(ds, idx){
+        chain = chain.then(function(){
+          if (datasetsCache[ds.file]) return Promise.resolve(datasetsCache[ds.file]);
+          return fetch(ds.file).then(function(resp){ if (!resp.ok) throw new Error('HTTP '+resp.status); return resp.json(); }).then(function(json){
+            var features = (json.features || []).filter(function(f){ return normalizeKey(f.properties) === wadName; });
+            datasetsCache[ds.file] = { features: features, json: json };
+            return datasetsCache[ds.file];
+          });
+        }).then(function(data){
+          var features = (data && data.features) || [];
+          var chartId = 'chart-' + idx + '-' + ds.title.replace(/[^a-z0-9]/gi,'_');
+          var container = document.getElementById('charts');
+          var card = document.createElement('div'); card.className='chart-item'; card.id='card-'+chartId;
+          card.innerHTML = '<div class="d-flex justify-content-between align-items-center mb-2"><strong>'+ds.title+'</strong></div><div id="'+chartId+'" style="min-height:160px"></div>';
+          container.appendChild(card);
+          if (features.length===0) { document.getElementById(chartId).innerHTML = '<div class="small-muted">Tidak ada data.</div>'; return; }
+          var props = features[0].properties || {};
+          var numeric = [];
+          Object.keys(props).forEach(function(k){ var v = props[k]; if (v!==null && v!==undefined && !isNaN(Number(v)) && k.toLowerCase().indexOf('wadm')===-1) numeric.push({ key:k, value: Number(v) }); });
+          // Prefer pie/doughnut for all charts
+          if (ds.file.indexOf('JenisKelamin')!==-1 || ds.file.indexOf('KepalaKeluarga')!==-1){
+            var maleKey = findKeyCaseInsensitive(props, ['male','laki','lakilaki','POP_MALE','JML_LK']);
+            var femaleKey = findKeyCaseInsensitive(props, ['female','perempuan','POP_FEMALE','JML_PR']);
+            if (maleKey || femaleKey){ var m = maleKey? Number(props[maleKey])||0:0; var f = femaleKey? Number(props[femaleKey])||0:0; Highcharts.chart(chartId, { chart:{ type:'pie' }, title:{ text:null }, credits:{ enabled:false }, exporting:{ enabled:true }, tooltip:{ pointFormat:'<b>{point.y}</b> ({point.percentage:.1f}%)' }, series:[{ name: ds.title, colorByPoint:true, innerSize:'50%', data:[{ name:'Laki-laki', y:m }, { name:'Perempuan', y:f }] }], plotOptions:{ pie:{ allowPointSelect:true, cursor:'pointer', dataLabels:{ enabled:true, format:'{point.name}: {point.y} ({point.percentage:.1f}%)' } } } }); return; }
+          }
+          var chartData = numeric.map(function(n){ return { name: n.key, y: n.value }; });
+          if (chartData.length===0){ document.getElementById(chartId).innerHTML = '<div class="small-muted">Tidak ada angka untuk divisualisasikan.</div>'; return; }
+          Highcharts.chart(chartId, { chart:{ type: 'pie' }, title:{ text:null }, credits:{ enabled:false }, exporting:{ enabled:true }, tooltip:{ pointFormat:'<b>{point.y}</b> ({point.percentage:.1f}%)' }, series:[{ name: ds.title, colorByPoint:true, innerSize:'50%', data: chartData }], plotOptions:{ pie:{ allowPointSelect:true, cursor:'pointer', dataLabels:{ enabled:true, format:'{point.name}: {point.y} ({point.percentage:.1f}%)' } } } });
+        }).catch(function(err){ console.warn('chart load failed', ds.file, err); var container = document.getElementById('charts'); var el = document.createElement('div'); el.className='chart-item'; el.innerHTML = '<div><strong>'+ds.title+'</strong><div class="small-muted">Gagal memuat data.</div></div>'; container.appendChild(el); });
+      });
+      return chain;
+    }
+
+      // Load and display Luas Wilayah (from KepadatanPenduduk_2025.geojson -> Luas_km2)
+      function loadLuasWilayah(){
+        var targetFile = 'data/KepadatanPenduduk_2025.geojson';
+        function showNotAvailable(){ var el = document.getElementById('luas-value'); if(el) el.textContent = 'Tidak tersedia'; }
+        if (!document.getElementById('luas-value')) return Promise.resolve();
+        var p = Promise.resolve(datasetsCache[targetFile] || null).then(function(cache){ if (cache && cache.features) return cache; return fetch(targetFile).then(function(resp){ if(!resp.ok) throw new Error('HTTP '+resp.status); return resp.json(); }).then(function(json){ var features = json.features || []; datasetsCache[targetFile] = { features: features, json: json }; return datasetsCache[targetFile]; }).catch(function(e){ console.warn('Failed loading luas file', e); return null; }); });
+        return p.then(function(cache){ if (!cache || !cache.features) { showNotAvailable(); return; } var feat = (cache.features||[]).filter(function(f){ return normalizeKey(f.properties) === wadName; })[0]; if (!feat){ showNotAvailable(); return; } var props = feat.properties || {}; var key = findKeyCaseInsensitive(props, ['Luas_km2','luas_km2','LuasKm2','luas','LUAS_KM2','LUAS']); var raw = key ? props[key] : null; if (raw===null || raw===undefined || raw==='') { showNotAvailable(); return; } var num = Number(raw); var text = (isNaN(num) ? String(raw) : (new Intl.NumberFormat('id-ID',{ maximumFractionDigits:2 }).format(num) + ' km²')); var el = document.getElementById('luas-value'); if (el) el.textContent = text; });
+      }
+
+      function findKeyCaseInsensitive(obj, candidates){ if(!obj) return null; var keys = Object.keys(obj); for(var i=0;i<candidates.length;i++){ for(var j=0;j<keys.length;j++){ if(keys[j].toLowerCase() === candidates[i].toString().toLowerCase()) return keys[j]; } } return null; }
+
+    function loadKecamatanGeometry(){
+      return fetch('data/kecbgd.geojson').then(function(resp){ if(!resp.ok) throw new Error('no'); return resp.json(); }).then(function(json){ var target = (json.features||[]).filter(function(f){ var p=f.properties||{}; var key = (p.WADMKC||p.NAMOBJ||p.WADMKD||'').toString(); return key === wadName; }); if (target.length>0){ areaLayer.clearLayers(); areaLayer.addData(target[0]); try{ map.fitBounds(areaLayer.getBounds(), { padding:[20,20] }); }catch(e){} } }).catch(function(){ /* ignore geometry load errors */ });
+    }
+
+    var map = L.map('map-detail', { center:[-6.914744,107.60981], zoom:12 });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap' }).addTo(map);
+    var areaLayer = L.geoJson(null, { style:{ color:'#ff6666', weight:2, fillColor:'#ffcccc', fillOpacity:0.4 } }).addTo(map);
+
+    (function(){
+      wadName = getQueryParam('wad') || getQueryParam('WADMKC') || '';
+      document.getElementById('page-title').textContent = wadName ? ('Kecamatan ' + wadName) : 'Kecamatan (tidak ditentukan)';
+      document.getElementById('summary').textContent = wadName ? 'Memuat data...' : 'Parameter wad tidak diberikan pada URL.';
+      if (!wadName) return;
+      loadKecamatanGeometry();
+      var tabEl = document.querySelectorAll('button[data-bs-toggle="tab"]');
+      tabEl.forEach(function(b){ b.addEventListener('shown.bs.tab', function(e){ var target = e.target.getAttribute('data-bs-target'); if (target === '#data-umum'){ loadDataTables().then(function(){ document.getElementById('summary').textContent = 'Data tabel siap.'; }); } else if (target === '#grafik'){ loadCharts().then(function(){ document.getElementById('summary').textContent = 'Grafik siap.'; }).then(function(){ loadLuasWilayah(); }); } }); });
+      loadDataTables().then(function(){ document.getElementById('summary').textContent = 'Data tabel siap.'; });
+      document.getElementById('filter-box').addEventListener('input', function(){ var q = this.value.toLowerCase(); document.querySelectorAll('#datasets .dataset-section').forEach(function(s){ s.style.display = (s.textContent.toLowerCase().indexOf(q) !== -1) ? '' : 'none'; }); document.querySelectorAll('#charts .chart-item').forEach(function(c){ c.style.display = (c.textContent.toLowerCase().indexOf(q) !== -1) ? '' : 'none'; }); });
+    })();
+  </script>
+</body>
+</html>

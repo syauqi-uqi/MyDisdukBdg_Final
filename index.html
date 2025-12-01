@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="theme-color" content="#000000">
+	<meta name="description" content="">
+	<meta name="author" content="">
+	<title>MyDisdukBdg</title>
+
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+	<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
+	<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
+	<link rel="stylesheet"
+		href="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.css">
+	<link rel="stylesheet" href="assets/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css">
+	<link rel="stylesheet" href="assets/css/app.css">
+
+	<link rel="apple-touch-icon" sizes="76x76" href="assets/img/favicon-76.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="assets/img/favicon-120.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="assets/img/favicon-152.png">
+	<link rel="icon" sizes="196x196" href="assets/img/favicon-196.png">
+	<link rel="icon" type="image/x-icon" href="assets/img/favicon.ico">
+</head>
+
+<body>
+	<nav class="navbar navbar-expand-lg bg-body-tertiary fixed-top" data-bs-theme="dark">
+		<div class="container-fluid">
+			<a class="navbar-brand d-flex align-items-center" href="#">
+				<img src="assets/img/logoweb.png" alt="logo" style="height:36px; object-fit:contain; margin-right:10px;"/>
+				MyDisdukBdg
+			</a>
+			<div class="d-inline-flex align-items-center">
+				<a class="d-block d-sm-none me-3" href="#" id="sidebar-toggle-btn"><i class="fa-solid fa-magnifying-glass fa-xl white"></i></a>
+				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+				aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+			</div>
+			<div class="collapse navbar-collapse" id="navbarSupportedContent">
+				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+					<li class="nav-item">
+						<a class="nav-link" href="#" id="about-btn"><i class="fa-solid fa-circle-question white"></i> Tentang</a>
+					</li>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<i class="fa-solid fa-earth-asia white"></i> Alat
+						</a>
+						<ul class="dropdown-menu">
+							<li><a class="dropdown-item" href="#" id="full-extent-btn"><i class="fa-solid fa-maximize text-dark"></i> Zoom To
+											Full Extent</a></li>
+							<li><a class="dropdown-item" href="#" id="legend-btn"><i class="fa-regular fa-image text-dark"></i> Show Legend</a>
+							</li>
+			    <li>
+				    <hr class="dropdown-divider">
+			    </li>
+			    <li><a class="dropdown-item" href="#" id="layer-properties-btn"><i class="fa-solid fa-sliders"></i> Layer Properties</a></li>
+			    <li><a class="dropdown-item" href="#" id="login-btn"><i class="fa-solid fa-user text-dark"></i> Login</a></li>
+						</ul>
+					</li>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<i class="fa-solid fa-cloud-arrow-down white"></i> Download
+						</a>
+						<ul class="dropdown-menu">
+					    <li><a href="#" class="dropdown-item" id="download-kecamatan-xlsx"><i class="fa-solid fa-download text-dark"></i> Kecamatan (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-agama-l-xlsx"><i class="fa-solid fa-download text-dark"></i> Agama (Laki-laki) (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-agama-p-xlsx"><i class="fa-solid fa-download text-dark"></i> Agama (Perempuan) (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-goldar-l-xlsx"><i class="fa-solid fa-download text-dark"></i> Golongan Darah (Laki-laki) (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-goldar-p-xlsx"><i class="fa-solid fa-download text-dark"></i> Golongan Darah (Perempuan) (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-jenis-kelamin-xlsx"><i class="fa-solid fa-download text-dark"></i> Jenis Kelamin (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-kepadatan-xlsx"><i class="fa-solid fa-download text-dark"></i> Kepadatan Penduduk (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-kepalakeluarga-xlsx"><i class="fa-solid fa-download text-dark"></i> Kepala Keluarga (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-pekerjaan-l-xlsx"><i class="fa-solid fa-download text-dark"></i> Pekerjaan (Laki-laki) (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-pekerjaan-p-xlsx"><i class="fa-solid fa-download text-dark"></i> Pekerjaan (Perempuan) (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-pendidikan-l-xlsx"><i class="fa-solid fa-download text-dark"></i> Pendidikan (Laki-laki) (XLSX)</a></li>
+					    <li><a href="#" class="dropdown-item" id="download-pendidikan-p-xlsx"><i class="fa-solid fa-download text-dark"></i> Pendidikan (Perempuan) (XLSX)</a></li>
+						</ul>
+					</li>
+					<li class="nav-item d-none d-sm-block">
+						<a class="nav-link" href="#" id="list-btn"><i class="fa-solid fa-list white"></i> Kantor Kecamatan</a>
+					</li>
+				</ul>
+				<form class="d-block has-feedback" role="search">
+					<div class="form-floating">
+						<input id="searchbox" class="form-control bg-light text-dark" type="text" placeholder="Search"
+							aria-label="Search">
+						<i class="fa-solid fa-magnifying-glass form-control-feedback" id="searchicon"></i>
+					</div>
+				</form>
+			</div>
+		</div>
+	</nav>
+
+	<div id="container">
+		<div id="sidebar">
+			<div class="sidebar-wrapper">
+				<div class="panel panel-default" id="features">
+					<div class="panel-heading">
+						<h3 class="panel-title align-items-center">Kantor Kecamatan
+							<button type="button" class="btn btn-light btn-sm me-2 py-0 float-end" id="sidebar-hide-btn"><i
+									class="fa-solid fa-chevron-left"></i></button>
+						</h3>
+					</div>
+					<div class="panel-body">
+						<div class="row">
+							<div class="col-xs-8 col-md-8 pe-md-1 pe-sm-0">
+								<input type="text" class="form-control search" placeholder="Filter" />
+							</div>
+							<div class="col-xs-4 col-md-4 ps-md-1 ps-sm-0">
+								<button type="button" class="btn btn-primary sort d-none d-sm-block d-inline-flex align-items-center"
+									data-sort="feature-name" id="sort-btn"><i class="fa-solid fa-sort"></i>&nbsp;Sort</button>
+							</div>
+						</div>
+					</div>
+					<div class="sidebar-table border">
+						<table class="table table-hover" id="feature-list">
+								<thead class="d-none">
+									<tr>
+										<th>Icon</th>
+										<th>Name</th>
+										<th>Chevron</th>
+									</tr>
+								</thead>
+							<tbody class="list"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="map"></div>
+		<!-- Dynamic legend (updated from JS) -->
+		<div id="dynamic-legend" class="map-legend p-2 bg-white border" style="position: absolute; left: 10px; bottom: 10px; z-index:400; display: none;"></div>
+	</div>
+	<div id="loading">
+		<div class="loading-indicator">
+			<div class="progress" role="progressbar" aria-label="Animated striped example" aria-valuenow="100"
+				aria-valuemin="0" aria-valuemax="100">
+				<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+			</div>
+		</div>
+	</div>
+
+
+	<div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-xl">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-5" id="aboutModalLabel">Selamat datang di WebGIS Kependudukan Kota Bandung!</h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<!-- Nav Tabs about & contact -->
+					<ul class="nav nav-tabs nav-fill" id="aboutTabs">
+						<li class="nav-item">
+							<a class="nav-link active" id="about-tab" data-bs-toggle="tab" href="#about" role="tab"
+								aria-controls="about" aria-selected="true"><i class="fa-solid fa-circle-question"></i> Tentang</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" id="contact-tab" data-bs-toggle="tab" href="#contact" role="tab"
+								aria-controls="contact" aria-selected="false"><i class="fa-solid fa-envelope"></i> Hubungi kami</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" id="disclaimer-tab" data-bs-toggle="tab" href="#disclaimer" role="tab"
+								aria-controls="disclaimer" aria-selected="false"><i class="fa-solid fa-circle-exclamation"></i>
+								Disclaimer</a>
+						</li>
+						<li class="nav-item dropdown">
+							<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button"
+								aria-expanded="false"><i class="fa-solid fa-earth-asia"></i> Metadata</a>
+							<ul class="dropdown-menu">
+								<li><a class="dropdown-item" data-bs-toggle="tab" href="#administrasi-tab" role="tab"
+									aria-controls="administrasi-tab" aria-selected="false">Batas Administrasi</a></li>
+								<li><a class=" dropdown-item" data-bs-toggle="tab" href="#agama-tab" role="tab"
+									aria-controls="agama-tab" aria-selected="false">Agama</a></li>
+								<li><a class="dropdown-item" data-bs-toggle="tab" href="#goldar-tab" role="tab"
+									aria-controls="goldar-tab" aria-selected="false">Golongan Darah</a></li>
+								<li><a class="dropdown-item" data-bs-toggle="tab" href="#kepadatanpenduduk-tab" role="tab"
+									aria-controls="kepadatanpenduduk-tab" aria-selected="false">Kepadatan Penduduk</a></li>
+                                <li><a class="dropdown-item" data-bs-toggle="tab" href="#kepalakeluarga-tab" role="tab"
+									aria-controls="kepalakeluarga-tab" aria-selected="false">Kepala Keluarga</a></li>
+                                <li><a class="dropdown-item" data-bs-toggle="tab" href="#pekerjaan-tab" role="tab"
+									aria-controls="pekerjaan-tab" aria-selected="false">Pekerjaan</a></li>
+                                <li><a class="dropdown-item" data-bs-toggle="tab" href="#pendidikan-tab" role="tab"
+                                    aria-controls="pendidikan-tab" aria-selected="false">Pendidikan</a></li>
+							</ul>
+						</li>
+					</ul>
+					<!-- Tab Panes -->
+					<div class="tab-content p-2" id="aboutTabsContent">
+						<div class="tab-pane fade show active" id="about" role="tabpanel" aria-labelledby="about-tab">
+							<p>Menampilkan peta interaktif kependudukan Kota Bandung Semester 1 Tahun 2025 menggunakan <a
+									href="http://getbootstrap.com/">Bootstrap 5</a>, <a href="http://leafletjs.com/"
+									target="_blank">Leaflet</a>, dan <a href="http://twitter.github.io/typeahead.js/"
+									target="_blank">typeahead.js</a>. Sebagai produk dari Mata Kuliah Proyek Konsultansi
+                                    Prodi Survei Pemetaan dan Informasi Geografis Universitas Pendidikan Indonesia.</p>
+							<ul class="list-group">
+								<li class="list-group-item active" aria-current="true">Fitur</li>
+								<li class="list-group-item">Menampilkan peta interaktif data kependudukan</li>
+								<li class="list-group-item">Melakukan visualisasi suatu kategori data kependudukan menggunakan 
+                                    Layer Properties pada menu Alat</li>
+								<li class="list-group-item">Mendownload data kependudukan dalam format Excel pada menu Download</li>
+								<li class="list-group-item">Menampilkan grafik data kependudukan Kota Bandung Semester 1 Tahun 2025 pada button Detail</li>
+                                <li class="list-group-item">Menampilkan informasi wilayah pada sidebar</li>
+							</ul>
+						</div>
+						<div class="tab-pane fade bg-light border" id="contact" role="tabpanel" aria-labelledby="contact-tab">
+							<form id="contact-form">
+								<div class="row p-2">
+									<div class="col-4">
+										<div class="mb-3">
+											<label for="first-name" class="form-label">Nama Lengkap</label>
+											<input type="text" class="form-control" id="first-name">
+										</div>
+										<div class="mb-3">
+											<label for="last-name" class="form-label">Nama Panggilan</label>
+											<input type="text" class="form-control" id="last-name">
+										</div>
+										<div class="mb-3">
+											<label for="email" class="form-label">Email</label>
+											<input type="email" class="form-control" id="email">
+										</div>
+									</div>
+									<div class="col-8">
+										<div class="mb-3">
+											<label for="message" class="form-label">Pesan</label>
+											<textarea class="form-control" id="message" rows="8"></textarea>
+										</div>
+									</div>
+								</div>
+								<div class="row p-2">
+									<div class="col-12 text-end">
+										<button type="submit" class="btn btn-primary">Kirim</button>
+									</div>
+								</div>
+							</form>
+						</div>
+						<div class="tab-pane fade p-2" id="disclaimer" role="tabpanel" aria-labelledby="disclaimer-tab">
+							<p class="text-danger">Batas Administrasi yang ditampilkan pada peta ini bersumber dari shapefile Badan Informasi Geospasial (BIG).</p>
+							<p class="text-danger">Data yang ditampilkan pada peta ini bersumber dari Data Kependudukan Kota Bandung Semester 1 
+                                Tahun 2025 dan dapat berubah sewaktu-waktu.</p>
+                            <p class="text-danger">Untuk informasi lebih lanjut, silakan menghubungi Disdukcapil Kota Bandung.</p>
+						</div>
+						<div class="tab-pane fade p-2" id="administrasi-tab" role="tabpanel" aria-labelledby="administrasi-tab">
+							<p>Batas Administrasi dari <a href="https://geoservices.big.go.id/portal/apps/webappviewer/index.html?id=49bda2cefd3f4b92aa726300bcdb40f7" 
+                                target="_blank">Badan Informasi Geospasial (BIG)</a></p>
+						</div>
+						<div class="tab-pane fade p-2" id="agama-tab" role="tabpanel" aria-labelledby="agama-tab">
+							<p>Data Konsolidasi Bersih Semester Kementerian Dalam Negeri I Tahun 2025</p>
+						</div>
+                        <div class="tab-pane fade p-2" id="goldar-tab" role="tabpanel" aria-labelledby="goldar-tab">
+							<p>Data Konsolidasi Bersih Semester Kementerian Dalam Negeri I Tahun 2025</p>
+						</div>
+                        <div class="tab-pane fade p-2" id="kepadatanpenduduk-tab" role="tabpanel" aria-labelledby="kepadatanpenduduk-tab">
+                            <p>Data Konsolidasi Bersih Semester Kementerian Dalam Negeri I Tahun 2025</p>
+						</div>
+                        <div class="tab-pane fade p-2" id="kepalakeluarga-tab" role="tabpanel" aria-labelledby="kepalakeluarga-tab">
+                            <p>Data Konsolidasi Bersih Semester Kementerian Dalam Negeri I Tahun 2025</p>
+						</div>
+                        <div class="tab-pane fade p-2" id="pekerjaan-tab" role="tabpanel" aria-labelledby="pekerjaan-tab">
+                            <p>Data Konsolidasi Bersih Semester Kementerian Dalam Negeri I Tahun 2025</p>
+						</div>
+                        <div class="tab-pane fade p-2" id="pendidikan-tab" role="tabpanel" aria-labelledby="pendidikan-tab">
+                            <p>Data Konsolidasi Bersih Semester Kementerian Dalam Negeri I Tahun 2025</p>
+						</div>
+					</div>
+
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div><!-- /.modal-content -->
+		</div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+
+	<div class="modal fade" id="legendModal" tabindex="-1" aria-labelledby="legendModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-5" id="legendModalLabel">Keterangan</h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<p>Keterangan akan muncul disini. Pilih field terlebih dahulu untuk melihat keterangan...</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+				</div>
+			</div><!-- /.modal-content -->
+		</div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+
+	<!-- Layer Properties Modal -->
+	<div class="modal fade" id="layerPropertiesModal" tabindex="-1" aria-labelledby="layerPropertiesLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="layerPropertiesLabel">Layer Properties</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label for="lp-layer-select" class="form-label">Pilih layer</label>
+						<select id="lp-layer-select" class="form-select">
+								<option value="kecbdg">Kecamatan Bandung</option>
+								<option value="pekerjaanpr">Pekerjaan Perempuan</option>
+								<option value="pekerjaanlk">Pekerjaan Pria</option>
+								<option value="GOLDARLK">Golongan Darah Laki-laki</option>
+								<option value="GOLDARPR">Golongan Darah Perempuan</option>
+								<option value="PENDIDIKANLK">Pendidikan Laki-laki</option>
+								<option value="PENDIDIKANPR">Pendidikan Perempuan</option>
+								<option value="KEPALA_KELUARGA">Kepala Keluarga</option>
+								<option value="AGAMALK">Agama (Laki-laki)</option>
+								<option value="AGAMAPR">Agama (Perempuan)</option>
+								<option value="JENISKEL">Jenis Kelamin</option>
+								<option value="KEPADATAN">Kepadatan Penduduk</option>
+						</select>
+					</div>
+					<div class="mb-3">
+						<label for="lp-field" class="form-label">Field untuk dikategorikan</label>
+						<input id="lp-field" list="lp-field-list" class="form-control" placeholder="Masukkan nama properti (contoh: POP_MALE)" />
+						<datalist id="lp-field-list"></datalist>
+					</div>
+					<div class="mb-3">
+						<label for="lp-classes" class="form-label">Jumlah kelas</label>
+						<input id="lp-classes" type="number" class="form-control" value="5" min="2" max="12" />
+					</div>
+					<div class="mb-3">
+						<label for="lp-method" class="form-label">Metode klasifikasi</label>
+						<select id="lp-method" class="form-select">
+							<option value="jenks">Natural Breaks (Jenks)</option>
+							<option value="equal">Equal Interval</option>
+							<option value="quantile">Quantile</option>
+						</select>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Range warna</label>
+						<!-- Horizontal color ramp for users. Orientation dev-only setting available but default is horizontal -->
+						<div class="d-flex flex-column">
+							<div id="lp-color-ramp" class="d-flex align-items-center justify-content-between">
+								<div class="text-start"><small>Terendah</small></div>
+								<div class="d-flex gap-2">
+									<input id="lp-color-from" type="color" value="#f7fbff" class="form-control form-control-color" />
+									<input id="lp-color-to" type="color" value="#08306b" class="form-control form-control-color" />
+								</div>
+								<div class="text-end"><small>Tertinggi</small></div>
+							</div>
+						</div>
+						<!-- Dev-only orientation setting (hidden by default) -->
+						<div class="form-text dev-only d-none"><label>Orientasi Ramp (DEV)</label>
+							<select id="lp-orientation-dev" class="form-select form-select-sm">
+								<option value="horizontal">Horizontal</option>
+								<option value="vertical">Vertical</option>
+							</select>
+						</div>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Tampilan popup</label>
+						<div>
+							<div class="form-check">
+								<input class="form-check-input" type="radio" name="lp-popup-mode" id="lp-popup-all" value="all" checked>
+								<label class="form-check-label" for="lp-popup-all">Tampilkan seluruh isi Field</label>
+							</div>
+							<div class="form-check">
+								<input class="form-check-input" type="radio" name="lp-popup-mode" id="lp-popup-only" value="only">
+								<label class="form-check-label" for="lp-popup-only">Hanya tampilkan Field yang dikategorikan</label>
+							</div>
+						</div>
+					</div>
+					<div id="lp-legend-preview" class="mb-2"></div>
+					<!-- Editable class labels (appears after classification applied) -->
+					<div id="lp-class-labels" class="mb-2"></div>
+					<!-- Per-field styling controls -->
+					<div class="mb-3">
+						<label class="form-label">Field styling (per-field)</label>
+						<div id="lp-field-styles" class="small text-muted">Pilih layer terlebih dahulu untuk melihat field</div>
+					</div>
+					<!-- Label toggle for WADMKC -->
+					<div class="mb-3 form-check form-switch">
+						<input class="form-check-input" type="checkbox" id="lp-label-toggle">
+						<label class="form-check-label" for="lp-label-toggle">Tampilkan label teks (WADMKC) pada layer</label>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Label style</label>
+						<div class="row g-2">
+							<div class="col-4"><input id="lp-label-color" type="color" value="#000000" class="form-control form-control-color" title="Warna teks" /></div>
+							<div class="col-5"><select id="lp-label-font" class="form-select"><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Segoe UI">Segoe UI</option></select></div>
+							<div class="col-3"><input id="lp-label-size" type="number" min="8" max="36" value="12" class="form-control form-control-sm" /></div>
+						</div>
+						<div class="form-text">Warna, jenis font, dan ukuran label (WADMKC)</div>
+					</div>
+					<div class="mb-3">
+						<label for="lp-opacity" class="form-label">Opacity layer</label>
+						<input id="lp-opacity" type="range" min="0" max="1" step="0.05" value="0.7" class="form-range" />
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+					<button type="button" class="btn btn-outline-secondary" id="lp-reset">Reset Style</button>
+					<button type="button" class="btn btn-primary" id="lp-apply">Terapkan</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Include SheetJS for XLSX export -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+	<!-- Basemap providers: Esri used here. If you need Google Maps tiles you must provide an API key and respect Google's Terms of Service.
+	To add Google basemaps, replace or add tileLayer URLs with your Google API key and proper tile endpoint. -->
+	<!-- Esri basemaps available via ArcGIS REST -->
+
+	<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-5" id="loginModalLabel">Login</h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<form id="contact-form">
+						<div class="mb-3">
+							<label for="username" class="form-label">Username</label>
+							<input type="text" class="form-control" id="username">
+						</div>
+						<div class="mb-3">
+							<label for="email" class="form-label">Email</label>
+							<input type="email" class="form-control" id="email">
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="submit" class="btn btn-primary">Login</button>
+				</div>
+			</div><!-- /.modal-content -->
+		</div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+
+	<div class="modal fade" id="featureModal" tabindex="-1" aria-labelledby="featureModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-5" id="feature-title"></h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body" id="feature-info"></div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div><!-- /.modal-content -->
+		</div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+
+	<!-- Attribution modal removed -->
+
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/typeahead.js/0.10.5/typeahead.bundle.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/3.0.3/handlebars.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.1.1/list.min.js"></script>
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+	<script
+		src="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.min.js"></script>
+	<script src="assets/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js"></script>
+	<script src="assets/js/bootstrap5-jquery-compat.js"></script>
+	<script src="assets/js/app.js"></script>
+</body>
+
+</html>

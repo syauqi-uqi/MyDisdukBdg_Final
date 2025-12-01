@@ -1,0 +1,345 @@
+html, body, #container {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+body {
+  padding-top: 56px;
+}
+input[type="radio"], input[type="checkbox"] {
+  margin: 0;
+}
+#sidebar {
+  display: block;
+  width: 250px;
+  height: 100%;
+  max-width: 100%;
+  float: left;
+}
+#map {
+  width: auto;
+  height: 100%;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+#loading {
+  position: absolute;
+  width: 220px;
+  height: 19px;
+  top: 50%;
+  left: 50%;
+  margin: -10px 0 0 -110px;
+  z-index: 20001;
+}
+#features {
+  margin: 0px;
+  border: none;
+  border-radius: 0px;
+  -webkit-box-shadow: none;
+    box-shadow: none;
+}
+#sidebar-hide-btn {
+  margin-top: -2px;
+}
+#aboutTabsContent {
+  padding-top: 10px;
+}
+.progress-bar-full {
+  width: 100%;
+}
+.white {
+  color: #FFFFFF;
+}
+.panel-body:before,
+.panel-body:after {
+  display: table;
+  content: " ";
+}
+.panel-body:after {
+  clear: both;
+}
+.panel {
+  margin-bottom: 20px;
+  background-color: #fff;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, .05);
+          box-shadow: 0 1px 1px rgba(0, 0, 0, .05);
+}
+.panel-body {
+	width: 250px;
+	padding: 5px;
+}
+.panel-heading {
+	width: 250px;
+  padding: 0px 0px;
+  border-bottom: 1px solid transparent;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+	background-color: #f5f5f5;
+}
+.panel-heading > .dropdown .dropdown-toggle {
+  color: inherit;
+}
+.panel-title {
+  margin-top: 5px;
+  margin-bottom: 5px;
+	margin-left: 5px;
+  font-size: 18px;
+  color: inherit;
+}
+.panel-title > a,
+.panel-title > small,
+.panel-title > .small,
+.panel-title > small > a,
+.panel-title > .small > a {
+  color: inherit;
+}
+.panel-footer {
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #ddd;
+  border-bottom-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+.panel-default {
+  border-color: #ddd;
+}
+.panel-default > .panel-heading {
+  color: #333;
+  background-color: #f5f5f5;
+  border-color: #ddd;
+}
+/*   */
+.feature-row {
+  cursor: pointer;
+  width: 250px;
+}
+.sidebar-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.sidebar-table {
+  position: absolute;
+  width: 100%;
+  top: 80px;
+  bottom: 0px;
+  overflow: auto;
+}
+.leaflet-control-layers {
+  overflow: auto;
+}
+.leaflet-control-layers label {
+  font-weight: normal;
+  margin-bottom: 0px;
+}
+.leaflet-control-layers-list input[type="radio"], input[type="checkbox"] {
+  margin: 2px;
+}
+.table {
+  margin-bottom: 0px;
+}
+.navbar .navbar-brand {
+  font-weight: bold;
+  /* font-size: 25px; */
+  color: #FFFFFF;
+}
+.navbar-collapse.in {
+  overflow-y: hidden;
+}
+.navbar-header .navbar-icon-container {
+  margin-right: 15px;
+}
+.navbar-header .navbar-icon {
+  line-height: 50px;
+  height: 50px;
+}
+.navbar-header a.navbar-icon {
+  margin-left: 25px;
+}
+.dropdown-menu {
+	background-color: #fff;
+}
+.dropdown-menu a {
+	color: #333;
+}
+.dropdown-menu a:hover {
+	background-color: #f8f8f8;
+	color: #333;
+}
+.dropdown-divider {
+	background-color: #e3e3e3;
+}
+.typeahead {
+  background-color: #FFFFFF;
+}
+.tt-dropdown-menu {
+  background-color: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px 4px 4px 4px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  margin-top: 4px;
+  padding: 4px 0;
+  width: 100%;
+  max-height: 300px;
+  overflow: auto;
+}
+.tt-suggestion {
+  font-size: 14px;
+  line-height: 20px;
+  padding: 3px 10px;
+}
+.tt-suggestion.tt-cursor {
+  background-color: #0097CF;
+  color: #FFFFFF;
+  cursor: pointer;
+}
+.tt-suggestion p {
+  margin: 0;
+}
+.tt-suggestion + .tt-suggestion {
+  border-top: 1px solid #ccc;
+}
+.typeahead-header {
+  margin: 0 5px 5px 5px;
+  padding: 3px 0;
+  border-bottom: 2px solid #333;
+}
+.has-feedback .form-control-feedback {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  display: block;
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  text-align: center;
+}
+@media (max-width: 992px) {
+  .navbar .navbar-brand {
+    font-size: 18px;
+  }
+}
+@media (max-width: 767px){
+  #sidebar {
+    display: none;
+  }
+  .url-break {
+    word-break: break-all;
+    word-break: break-word;
+    -webkit-hyphens: auto;
+      hyphens: auto;
+  }
+  .dropdown-menu a i{
+    color: #FFFFFF;
+  }
+}
+/* Print Handling */
+@media print {
+  .navbar {
+    display: none !important;
+  }
+  .leaflet-control-container {
+    display: none !important;
+  }
+}
+
+/* Dynamic Legend */
+#dynamic-legend {
+  font-size: 13px;
+  max-width: 260px;
+}
+.legend-list { padding: 4px 0; }
+.legend-row { display:flex; align-items:center; margin-bottom:4px; }
+.legend-swatch { width:20px; height:14px; display:inline-block; margin-right:8px; border:1px solid #ccc; }
+
+/* Ensure dynamic legend sits visually below the grouped layer control */
+.leaflet-control-layers { z-index: 420; }
+#dynamic-legend { z-index: 410; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+
+/* Ensure highlight stands out */
+.leaflet-container .selected-highlight { box-shadow: 0 0 12px rgba(255,235,59,0.8); }
+
+/* WADMKC label style */
+.wadmkc-label span { background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 3px; font-size: 12px; color: #111; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+/* Tooltip styles for area names and points */
+.area-tooltip.leaflet-tooltip {
+  background: rgba(255,255,255,0.95);
+  color: #111;
+  border: 1px solid rgba(0,0,0,0.15);
+  padding: 4px 8px;
+  font-size: 13px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.point-tooltip.leaflet-tooltip {
+  background: rgba(255,255,255,0.95);
+  color: #111;
+  border: 1px solid rgba(0,0,0,0.12);
+  padding: 3px 6px;
+  font-size: 12px;
+  border-radius: 3px;
+}
+
+/* When sidebar visible shift legend to the right */
+#sidebar:visible ~ #map #dynamic-legend { left: 270px; }
+
+/* Popup layer section */
+.popup-layer-header { background: #f5f5f5; padding: 4px; margin-bottom:6px; }
+.popup-layer-section { margin-bottom:6px; }
+
+/* Disable keyboard focus outline for interactive Leaflet elements (paths/icons) */
+.leaflet-interactive:focus { outline: none !important; }
+.leaflet-interactive[tabindex="-1"] { outline: none !important; }
+
+/* Batasi pointer-events hanya pada area yang dicat (painted) pada path SVG Leaflet */
+.leaflet-container svg path.leaflet-interactive {
+  /* nilai SVG-specific yang paling kompatibel untuk hanya menerima event
+     pada area yang benar-benar dilukis (fill atau stroke). */
+  pointer-events: visiblePainted;
+  cursor: pointer;
+}
+
+/* Enhanced dataset table visuals */
+.dataset-section .enhanced-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.dataset-section .enhanced-table thead th {
+  background: linear-gradient(180deg, #f3f6fb 0%, #eef3fa 100%);
+  color: #123248;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.dataset-section .enhanced-table tbody td {
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+.dataset-section .enhanced-table tfoot th {
+  background:#f1f5f9;
+  font-weight:700;
+  color: #0b2a3a;
+  padding:10px 12px;
+  border-top: 2px solid rgba(0,0,0,0.06);
+}
+.dataset-section .enhanced-table .total-row {
+  background: rgba(16, 185, 129, 0.06);
+}
+.dataset-section .table-responsive { margin-top:6px; }
+
+/* Compact popup styles: cap size and make details scrollable */
+.combined-popup .combined-popup-wrapper, .popup-compact-wrapper { max-width: 520px; }
+.popup-compact-wrapper .compact-table th, .popup-compact-wrapper .compact-table td { padding:6px 8px; }
+.popup-compact-wrapper .details-wrapper .details-scroll { max-height:220px; overflow:auto; margin-top:8px; border-top:1px solid #eee; padding-top:6px; }
+.popup-compact-wrapper .details-table th { width:40%; }
+.popup-compact-wrapper .toggle-details-btn { text-decoration: none; }
+.combined-popup .popup-layer-content, .popup-compact-wrapper { box-sizing: border-box; }
+
+/* Make sure popups don't become extremely tall */
+.leaflet-popup-content .details-scroll, .leaflet-popup-content .popup-layer-content { max-height: 420px; overflow: auto; }
+
+/* Toggle icon adjustments */
+.popup-compact-wrapper .toggle-icon { width: 12px; }
+/* export button removed from popup; export remains on details.html */
+
